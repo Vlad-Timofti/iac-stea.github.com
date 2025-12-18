@@ -1,0 +1,1419 @@
+<!DOCTYPE html>
+<html lang="ro">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Simulare Proiectil Avansată</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #1a237e 0%, #311b92 100%);
+            min-height: 100vh;
+            padding: 20px;
+            color: #333;
+        }
+
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 20px;
+            box-shadow: 0 25px 75px rgba(0, 0, 0, 0.5);
+            overflow: hidden;
+        }
+
+        .header {
+            background: linear-gradient(135deg, #1a237e 0%, #4a148c 100%);
+            color: white;
+            padding: 25px;
+            text-align: center;
+        }
+
+        .header h1 {
+            font-size: 2.8rem;
+            margin-bottom: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 15px;
+        }
+
+        .header p {
+            opacity: 0.9;
+            font-size: 1.1rem;
+            max-width: 800px;
+            margin: 0 auto;
+            line-height: 1.6;
+        }
+
+        .simulation-area {
+            display: grid;
+            grid-template-columns: 1fr 400px;
+            min-height: 800px;
+        }
+
+        .canvas-container {
+            background: #0d1117;
+            padding: 20px;
+            position: relative;
+            border-right: 3px solid #4a148c;
+        }
+
+        #simulationCanvas {
+            display: block;
+            background: #0a0e14;
+            border-radius: 8px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
+            width: 100%;
+            height: 700px;
+        }
+
+        .canvas-overlay {
+            position: absolute;
+            top: 20px;
+            left: 20px;
+            color: white;
+            background: rgba(0, 0, 0, 0.7);
+            padding: 10px 15px;
+            border-radius: 5px;
+            font-family: 'Courier New', monospace;
+            font-size: 0.9rem;
+        }
+
+        .controls-panel {
+            background: #f5f5f5;
+            padding: 25px;
+            overflow-y: auto;
+            max-height: 800px;
+        }
+
+        .controls-section {
+            background: white;
+            border-radius: 12px;
+            padding: 20px;
+            margin-bottom: 25px;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+            border-left: 4px solid #1a237e;
+        }
+
+        .section-title {
+            color: #1a237e;
+            margin-bottom: 20px;
+            font-size: 1.3rem;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .section-title i {
+            color: #4a148c;
+        }
+
+        .slider-group {
+            margin-bottom: 20px;
+        }
+
+        .slider-header {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 8px;
+            font-weight: 500;
+        }
+
+        .slider-value {
+            color: #1a237e;
+            font-weight: 600;
+            font-family: 'Courier New', monospace;
+        }
+
+        input[type="range"] {
+            width: 100%;
+            height: 8px;
+            -webkit-appearance: none;
+            background: linear-gradient(90deg, #1a237e, #4a148c);
+            border-radius: 4px;
+            outline: none;
+        }
+
+        input[type="range"]::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            width: 24px;
+            height: 24px;
+            background: white;
+            border: 3px solid #1a237e;
+            border-radius: 50%;
+            cursor: pointer;
+            transition: all 0.2s;
+            box-shadow: 0 2px 6px rgba(0, 0, 0, 0.2);
+        }
+
+        input[type="range"]::-webkit-slider-thumb:hover {
+            transform: scale(1.2);
+            background: #1a237e;
+            border-color: white;
+        }
+
+        .checkbox-group, .radio-group {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            margin: 12px 0;
+            padding: 8px 12px;
+            background: #f8f9fa;
+            border-radius: 6px;
+            transition: background 0.3s;
+        }
+
+        .checkbox-group:hover, .radio-group:hover {
+            background: #e9ecef;
+        }
+
+        input[type="checkbox"], input[type="radio"] {
+            width: 18px;
+            height: 18px;
+            accent-color: #1a237e;
+        }
+
+        .button-group {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 10px;
+            margin: 20px 0;
+        }
+
+        button {
+            padding: 14px;
+            border: none;
+            border-radius: 8px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s;
+            font-size: 0.95rem;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+        }
+
+        #launchBtn {
+            background: linear-gradient(135deg, #00c853, #00e676);
+            color: white;
+        }
+
+        #launchBtn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(0, 200, 83, 0.4);
+        }
+
+        #pauseBtn {
+            background: linear-gradient(135deg, #ff9800, #ffb300);
+            color: white;
+        }
+
+        #pauseBtn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(255, 152, 0, 0.4);
+        }
+
+        #resetBtn {
+            background: linear-gradient(135deg, #f44336, #d32f2f);
+            color: white;
+        }
+
+        #resetBtn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(244, 67, 54, 0.4);
+        }
+
+        .preset-buttons {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 10px;
+            margin-top: 15px;
+        }
+
+        .preset-btn {
+            background: #e8eaf6;
+            color: #1a237e;
+            border: 2px solid #1a237e;
+        }
+
+        .preset-btn:hover {
+            background: #1a237e;
+            color: white;
+        }
+
+        .info-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 15px;
+            margin-top: 20px;
+        }
+
+        .info-card {
+            background: #f8f9fa;
+            padding: 15px;
+            border-radius: 8px;
+            border-left: 4px solid #4a148c;
+        }
+
+        .info-label {
+            font-size: 0.9rem;
+            color: #666;
+            margin-bottom: 5px;
+        }
+
+        .info-value {
+            font-size: 1.4rem;
+            font-weight: 700;
+            color: #1a237e;
+            font-family: 'Courier New', monospace;
+        }
+
+        .info-unit {
+            font-size: 0.9rem;
+            color: #666;
+            margin-left: 4px;
+        }
+
+        .graph-container {
+            margin-top: 25px;
+            background: white;
+            border-radius: 8px;
+            padding: 15px;
+            border: 1px solid #ddd;
+        }
+
+        #graphCanvas {
+            width: 100%;
+            height: 200px;
+            background: white;
+            border-radius: 4px;
+        }
+
+        .footer {
+            text-align: center;
+            padding: 20px;
+            background: #f8f9fa;
+            color: #666;
+            border-top: 1px solid #ddd;
+            font-size: 0.9rem;
+        }
+
+        .footer a {
+            color: #1a237e;
+            text-decoration: none;
+            font-weight: 600;
+        }
+
+        @media (max-width: 1200px) {
+            .simulation-area {
+                grid-template-columns: 1fr;
+            }
+            
+            .canvas-container {
+                border-right: none;
+                border-bottom: 3px solid #4a148c;
+            }
+            
+            #simulationCanvas {
+                height: 600px;
+            }
+        }
+
+        @media (max-width: 768px) {
+            .header h1 {
+                font-size: 2rem;
+                flex-direction: column;
+                gap: 10px;
+            }
+            
+            .button-group {
+                grid-template-columns: 1fr;
+            }
+            
+            .preset-buttons {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>
+                <i class="fas fa-rocket"></i>
+                Simulare Proiectil Avansată
+                <i class="fas fa-atom"></i>
+            </h1>
+            <p>Simulare fizică realistă a mișcării proiectilelor cu multiple parametri și efecte</p>
+        </div>
+        
+        <div class="simulation-area">
+            <div class="canvas-container">
+                <canvas id="simulationCanvas" width="1000" height="700"></canvas>
+                <div class="canvas-overlay">
+                    Scale: 1px = 0.5m | Time: <span id="currentTime">0.00</span>s
+                </div>
+            </div>
+            
+            <div class="controls-panel">
+                <!-- Secțiunea Parametri -->
+                <div class="controls-section">
+                    <h3 class="section-title"><i class="fas fa-sliders-h"></i> Parametri de Lansare</h3>
+                    
+                    <div class="slider-group">
+                        <div class="slider-header">
+                            <span>Unghi de lansare</span>
+                            <span id="angleValue" class="slider-value">45°</span>
+                        </div>
+                        <input type="range" id="angleSlider" min="0" max="90" step="0.5" value="45">
+                        <div class="slider-header">
+                            <span style="font-size: 0.9rem; color: #666;">0° (orizontal)</span>
+                            <span style="font-size: 0.9rem; color: #666;">90° (vertical)</span>
+                        </div>
+                    </div>
+                    
+                    <div class="slider-group">
+                        <div class="slider-header">
+                            <span>Viteză inițială</span>
+                            <span id="speedValue" class="slider-value">50 m/s</span>
+                        </div>
+                        <input type="range" id="speedSlider" min="5" max="200" step="1" value="50">
+                    </div>
+                    
+                    <div class="slider-group">
+                        <div class="slider-header">
+                            <span>Înălțime inițială</span>
+                            <span id="heightValue" class="slider-value">0 m</span>
+                        </div>
+                        <input type="range" id="heightSlider" min="0" max="100" step="1" value="0">
+                    </div>
+                    
+                    <div class="slider-group">
+                        <div class="slider-header">
+                            <span>Masă proiectil</span>
+                            <span id="massValue" class="slider-value">1.0 kg</span>
+                        </div>
+                        <input type="range" id="massSlider" min="0.1" max="10" step="0.1" value="1.0">
+                    </div>
+                </div>
+                
+                <!-- Secțiunea Mediu -->
+                <div class="controls-section">
+                    <h3 class="section-title"><i class="fas fa-mountain"></i> Parametri de Mediu</h3>
+                    
+                    <div class="slider-group">
+                        <div class="slider-header">
+                            <span>Accelerație gravitațională (g)</span>
+                            <span id="gravityValue" class="slider-value">9.81 m/s²</span>
+                        </div>
+                        <input type="range" id="gravitySlider" min="1.62" max="24.79" step="0.01" value="9.81">
+                        <div class="slider-header">
+                            <span style="font-size: 0.9rem; color: #666;">Lună: 1.62</span>
+                            <span style="font-size: 0.9rem; color: #666;">Jupiter: 24.79</span>
+                        </div>
+                    </div>
+                    
+                    <div class="slider-group">
+                        <div class="slider-header">
+                            <span>Densitatea aerului</span>
+                            <span id="densityValue" class="slider-value">1.2 kg/m³</span>
+                        </div>
+                        <input type="range" id="densitySlider" min="0" max="3" step="0.05" value="1.2">
+                    </div>
+                    
+                    <div class="slider-group">
+                        <div class="slider-header">
+                            <span>Coeficient de rezistență</span>
+                            <span id="dragValue" class="slider-value">0.47</span>
+                        </div>
+                        <input type="range" id="dragSlider" min="0" max="1" step="0.01" value="0.47">
+                    </div>
+                    
+                    <div class="checkbox-group">
+                        <input type="checkbox" id="airResistance" checked>
+                        <label for="airResistance"><strong>Rezistență aer activă</strong></label>
+                    </div>
+                    
+                    <div class="checkbox-group">
+                        <input type="checkbox" id="windEffect">
+                        <label for="windEffect">Efect vânt lateral</label>
+                    </div>
+                    
+                    <div class="slider-group" id="windGroup" style="display: none;">
+                        <div class="slider-header">
+                            <span>Viteza vântului</span>
+                            <span id="windValue" class="slider-value">0 m/s</span>
+                        </div>
+                        <input type="range" id="windSlider" min="-20" max="20" step="0.5" value="0">
+                    </div>
+                </div>
+                
+                <!-- Secțiunea Afișare -->
+                <div class="controls-section">
+                    <h3 class="section-title"><i class="fas fa-eye"></i> Opțiuni de Afișare</h3>
+                    
+                    <div class="checkbox-group">
+                        <input type="checkbox" id="showTrajectory" checked>
+                        <label for="showTrajectory">Arată traiectoria</label>
+                    </div>
+                    
+                    <div class="checkbox-group">
+                        <input type="checkbox" id="showGrid" checked>
+                        <label for="showGrid">Arată grid-ul</label>
+                    </div>
+                    
+                    <div class="checkbox-group">
+                        <input type="checkbox" id="showVectors">
+                        <label for="showVectors">Arată vectori viteză</label>
+                    </div>
+                    
+                    <div class="checkbox-group">
+                        <input type="checkbox" id="showDataPoints">
+                        <label for="showDataPoints">Arată puncte date</label>
+                    </div>
+                    
+                    <div class="checkbox-group">
+                        <input type="checkbox" id="showShadow" checked>
+                        <label for="showShadow">Arată umbra proiectilului</label>
+                    </div>
+                    
+                    <div class="radio-group">
+                        <input type="radio" id="projType1" name="projectileType" value="sphere" checked>
+                        <label for="projType1">Proiectil sferic</label>
+                    </div>
+                    
+                    <div class="radio-group">
+                        <input type="radio" id="projType2" name="projectileType" value="arrow">
+                        <label for="projType2">Proiectil săgeată</label>
+                    </div>
+                </div>
+                
+                <!-- Secțiunea Control -->
+                <div class="controls-section">
+                    <h3 class="section-title"><i class="fas fa-gamepad"></i> Control Simulare</h3>
+                    
+                    <div class="button-group">
+                        <button id="launchBtn">
+                            <i class="fas fa-play"></i> Lansare
+                        </button>
+                        <button id="pauseBtn">
+                            <i class="fas fa-pause"></i> Pauză
+                        </button>
+                        <button id="resetBtn">
+                            <i class="fas fa-redo"></i> Reset
+                        </button>
+                    </div>
+                    
+                    <div class="slider-group">
+                        <div class="slider-header">
+                            <span>Viteza simulare</span>
+                            <span id="simSpeedValue" class="slider-value">1.0x</span>
+                        </div>
+                        <input type="range" id="simSpeedSlider" min="0.1" max="5" step="0.1" value="1.0">
+                    </div>
+                    
+                    <h4 style="margin: 20px 0 10px 0; color: #1a237e;">Preset-uri:</h4>
+                    <div class="preset-buttons">
+                        <button class="preset-btn" data-preset="cannon">
+                            <i class="fas fa-cannon"></i> Tun medieval
+                        </button>
+                        <button class="preset-btn" data-preset="basketball">
+                            <i class="fas fa-basketball-ball"></i> Aruncare baschet
+                        </button>
+                        <button class="preset-btn" data-preset="moon">
+                            <i class="fas fa-moon"></i> Pe Lună
+                        </button>
+                        <button class="preset-btn" data-preset="jupiter">
+                            <i class="fas fa-globe"></i> Pe Jupiter
+                        </button>
+                    </div>
+                </div>
+                
+                <!-- Secțiunea Informații -->
+                <div class="controls-section">
+                    <h3 class="section-title"><i class="fas fa-chart-line"></i> Date Simulare</h3>
+                    
+                    <div class="info-grid">
+                        <div class="info-card">
+                            <div class="info-label">Distanța maximă</div>
+                            <div class="info-value">0.00<span class="info-unit">m</span></div>
+                        </div>
+                        <div class="info-card">
+                            <div class="info-label">Altitudine maximă</div>
+                            <div class="info-value">0.00<span class="info-unit">m</span></div>
+                        </div>
+                        <div class="info-card">
+                            <div class="info-label">Timp de zbor</div>
+                            <div class="info-value">0.00<span class="info-unit">s</span></div>
+                        </div>
+                        <div class="info-card">
+                            <div class="info-label">Viteză impact</div>
+                            <div class="info-value">0.00<span class="info-unit">m/s</span></div>
+                        </div>
+                    </div>
+                    
+                    <div class="graph-container">
+                        <div style="display: flex; justify-content: space-between; margin-bottom: 10px;">
+                            <span style="color: #1a237e; font-weight: 600;">Grafic Altitudine vs Timp</span>
+                            <div style="display: flex; gap: 15px; font-size: 0.9rem;">
+                                <span><span style="color: #4a148c;">●</span> Altitudine</span>
+                                <span><span style="color: #00c853;">●</span> Viteză verticală</span>
+                            </div>
+                        </div>
+                        <canvas id="graphCanvas" width="350" height="200"></canvas>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="footer">
+            <p>Simulare fizică realistă - Creat de Timofti Vlăduț-Constantin pentru educație și experimentare | 
+               <a href="https://phet.colorado.edu" target="_blank">Inspirat de PhET Interactive Simulations</a>
+            </p>
+        </div>
+    </div>
+
+    <script>
+        // =============== CONFIGURARE ===============
+        const canvas = document.getElementById('simulationCanvas');
+        const ctx = canvas.getContext('2d');
+        const graphCanvas = document.getElementById('graphCanvas');
+        const graphCtx = graphCanvas.getContext('2d');
+        
+        // Dimensiuni și scalare
+        const CANVAS_WIDTH = canvas.width;
+        const CANVAS_HEIGHT = canvas.height;
+        const GROUND_Y = CANVAS_HEIGHT - 100;
+        const SCALE = 2; // 1 pixel = 0.5 metri
+        
+        // Variabile simulare
+        let simulation = {
+            running: false,
+            paused: false,
+            time: 0,
+            projectile: null,
+            trajectory: [],
+            dataPoints: [],
+            graphData: []
+        };
+        
+        let animationId = null;
+        
+        // =============== ELEMENTE DOM ===============
+        // Slidere valori
+        const sliders = {
+            angle: document.getElementById('angleSlider'),
+            speed: document.getElementById('speedSlider'),
+            height: document.getElementById('heightSlider'),
+            mass: document.getElementById('massSlider'),
+            gravity: document.getElementById('gravitySlider'),
+            density: document.getElementById('densitySlider'),
+            drag: document.getElementById('dragSlider'),
+            wind: document.getElementById('windSlider'),
+            simSpeed: document.getElementById('simSpeedSlider')
+        };
+        
+        // Valori afișate
+        const values = {
+            angle: document.getElementById('angleValue'),
+            speed: document.getElementById('speedValue'),
+            height: document.getElementById('heightValue'),
+            mass: document.getElementById('massValue'),
+            gravity: document.getElementById('gravityValue'),
+            density: document.getElementById('densityValue'),
+            drag: document.getElementById('dragValue'),
+            wind: document.getElementById('windValue'),
+            simSpeed: document.getElementById('simSpeedValue'),
+            currentTime: document.getElementById('currentTime')
+        };
+        
+        // Checkbox-uri și radio buttons
+        const airResistance = document.getElementById('airResistance');
+        const windEffect = document.getElementById('windEffect');
+        const showTrajectory = document.getElementById('showTrajectory');
+        const showGrid = document.getElementById('showGrid');
+        const showVectors = document.getElementById('showVectors');
+        const showDataPoints = document.getElementById('showDataPoints');
+        const showShadow = document.getElementById('showShadow');
+        
+        // Butoane
+        const launchBtn = document.getElementById('launchBtn');
+        const pauseBtn = document.getElementById('pauseBtn');
+        const resetBtn = document.getElementById('resetBtn');
+        const presetBtns = document.querySelectorAll('.preset-btn');
+        
+        // Informații
+        const infoCards = {
+            distance: document.querySelector('.info-card:nth-child(1) .info-value'),
+            height: document.querySelector('.info-card:nth-child(2) .info-value'),
+            time: document.querySelector('.info-card:nth-child(3) .info-value'),
+            impactSpeed: document.querySelector('.info-card:nth-child(4) .info-value')
+        };
+        
+        // =============== CLASA PROIECTIL ===============
+        class Projectile {
+            constructor(config) {
+                // Parametri inițiali
+                this.angle = config.angle * Math.PI / 180;
+                this.speed = config.speed;
+                this.height = config.height;
+                this.mass = config.mass;
+                
+                // Proprietăți mediu
+                this.gravity = config.gravity;
+                this.airDensity = config.density;
+                this.dragCoefficient = config.drag;
+                this.windSpeed = config.wind;
+                
+                // Poziție și viteză inițială
+                this.x = 100;
+                this.y = GROUND_Y - this.height * SCALE;
+                this.vx = this.speed * Math.cos(this.angle);
+                this.vy = -this.speed * Math.sin(this.angle); // Negativ pentru că y crește în jos
+                
+                // Stare
+                this.active = true;
+                this.maxHeight = this.height;
+                this.maxDistance = 0;
+                this.flightTime = 0;
+                
+                // Proprietăți pentru rezistență aer
+                this.radius = 5 + this.mass * 0.5;
+                this.crossSection = Math.PI * this.radius * this.radius / 10000; // m²
+            }
+            
+            update(dt) {
+                if (!this.active) return false;
+                
+                // Calculăm forțele
+                let fx = 0;
+                let fy = this.mass * this.gravity; // Gravitația
+                
+                // Rezistența aerului (dacă e activată)
+                if (airResistance.checked) {
+                    const speed = Math.sqrt(this.vx * this.vx + this.vy * this.vy);
+                    const dragForce = 0.5 * this.airDensity * speed * speed * this.dragCoefficient * this.crossSection;
+                    
+                    if (speed > 0) {
+                        fx -= dragForce * (this.vx / speed);
+                        fy += dragForce * (this.vy / speed);
+                    }
+                }
+                
+                // Efect vânt (dacă e activat)
+                if (windEffect.checked) {
+                    fx += this.windSpeed * 0.1; // Forță constantă din vânt
+                }
+                
+                // Accelerare
+                const ax = fx / this.mass;
+                const ay = fy / this.mass;
+                
+                // Actualizare viteză
+                this.vx += ax * dt;
+                this.vy += ay * dt;
+                
+                // Actualizare poziție
+                this.x += this.vx * dt * SCALE;
+                this.y += this.vy * dt * SCALE;
+                
+                // Actualizare timp
+                this.flightTime += dt;
+                
+                // Actualizare înălțime maximă
+                const currentHeight = (GROUND_Y - this.y) / SCALE;
+                if (currentHeight > this.maxHeight) {
+                    this.maxHeight = currentHeight;
+                }
+                
+                // Actualizare distanță maximă
+                const currentDistance = (this.x - 100) / SCALE;
+                if (currentDistance > this.maxDistance) {
+                    this.maxDistance = currentDistance;
+                }
+                
+                // Verificare impact cu solul
+                if (this.y >= GROUND_Y) {
+                    this.y = GROUND_Y;
+                    this.active = false;
+                    this.impactSpeed = Math.sqrt(this.vx * this.vx + this.vy * this.vy);
+                }
+                
+                return this.active;
+            }
+            
+            draw() {
+                // Desenăm proiectilul în funcție de tip
+                const projectileType = document.querySelector('input[name="projectileType"]:checked').value;
+                
+                ctx.save();
+                ctx.translate(this.x, this.y);
+                
+                // Rotim proiectilul în direcția mișcării
+                const rotation = Math.atan2(this.vy, this.vx);
+                ctx.rotate(rotation);
+                
+                if (projectileType === 'sphere') {
+                    // Proiectil sferic
+                    ctx.beginPath();
+                    ctx.arc(0, 0, this.radius, 0, Math.PI * 2);
+                    const gradient = ctx.createRadialGradient(0, 0, 0, 0, 0, this.radius);
+                    gradient.addColorStop(0, '#4a148c');
+                    gradient.addColorStop(1, '#1a237e');
+                    ctx.fillStyle = gradient;
+                    ctx.fill();
+                    ctx.strokeStyle = '#311b92';
+                    ctx.lineWidth = 2;
+                    ctx.stroke();
+                } else {
+                    // Proiectil săgeată
+                    ctx.beginPath();
+                    ctx.moveTo(-this.radius * 2, 0);
+                    ctx.lineTo(this.radius * 2, 0);
+                    ctx.lineTo(this.radius * 1.5, -this.radius);
+                    ctx.lineTo(this.radius * 2, 0);
+                    ctx.lineTo(this.radius * 1.5, this.radius);
+                    ctx.closePath();
+                    
+                    const gradient = ctx.createLinearGradient(-this.radius * 2, 0, this.radius * 2, 0);
+                    gradient.addColorStop(0, '#d32f2f');
+                    gradient.addColorStop(0.5, '#f44336');
+                    gradient.addColorStop(1, '#ff5722');
+                    ctx.fillStyle = gradient;
+                    ctx.fill();
+                    ctx.strokeStyle = '#b71c1c';
+                    ctx.lineWidth = 1;
+                    ctx.stroke();
+                }
+                
+                ctx.restore();
+                
+                // Umbră (dacă e activată)
+                if (showShadow.checked && this.active) {
+                    ctx.beginPath();
+                    const shadowX = this.x;
+                    const shadowY = GROUND_Y;
+                    ctx.ellipse(shadowX, shadowY, this.radius * 1.5, this.radius * 0.5, 0, 0, Math.PI * 2);
+                    ctx.fillStyle = 'rgba(0, 0, 0, 0.2)';
+                    ctx.fill();
+                }
+                
+                // Vectori viteză (dacă sunt activați)
+                if (showVectors.checked && this.active) {
+                    ctx.beginPath();
+                    ctx.moveTo(this.x, this.y);
+                    ctx.lineTo(this.x + this.vx, this.y + this.vy);
+                    ctx.strokeStyle = '#00e676';
+                    ctx.lineWidth = 2;
+                    ctx.stroke();
+                    
+                    // Săgeată
+                    ctx.beginPath();
+                    const arrowX = this.x + this.vx;
+                    const arrowY = this.y + this.vy;
+                    ctx.moveTo(arrowX, arrowY);
+                    ctx.lineTo(arrowX - 8, arrowY - 4);
+                    ctx.lineTo(arrowX - 8, arrowY + 4);
+                    ctx.closePath();
+                    ctx.fillStyle = '#00e676';
+                    ctx.fill();
+                }
+            }
+        }
+        
+        // =============== FUNCȚII UTILITARE ===============
+        function updateSliderValues() {
+            values.angle.textContent = `${parseFloat(sliders.angle.value).toFixed(1)}°`;
+            values.speed.textContent = `${parseFloat(sliders.speed.value).toFixed(0)} m/s`;
+            values.height.textContent = `${parseFloat(sliders.height.value).toFixed(0)} m`;
+            values.mass.textContent = `${parseFloat(sliders.mass.value).toFixed(1)} kg`;
+            values.gravity.textContent = `${parseFloat(sliders.gravity.value).toFixed(2)} m/s²`;
+            values.density.textContent = `${parseFloat(sliders.density.value).toFixed(2)} kg/m³`;
+            values.drag.textContent = parseFloat(sliders.drag.value).toFixed(2);
+            values.wind.textContent = `${parseFloat(sliders.wind.value).toFixed(1)} m/s`;
+            values.simSpeed.textContent = `${parseFloat(sliders.simSpeed.value).toFixed(1)}x`;
+            
+            // Actualizare timp curent
+            if (simulation.running && simulation.projectile) {
+                values.currentTime.textContent = simulation.projectile.flightTime.toFixed(2);
+            }
+        }
+        
+        function updateInfo() {
+            if (simulation.projectile) {
+                infoCards.distance.textContent = `${simulation.projectile.maxDistance.toFixed(2)}`;
+                infoCards.height.textContent = `${simulation.projectile.maxHeight.toFixed(2)}`;
+                infoCards.time.textContent = `${simulation.projectile.flightTime.toFixed(2)}`;
+                
+                if (!simulation.projectile.active) {
+                    infoCards.impactSpeed.textContent = `${simulation.projectile.impactSpeed?.toFixed(2) || '0.00'}`;
+                }
+            }
+        }
+        
+        // =============== DESENARE ===============
+        function drawBackground() {
+            // Clear canvas
+            ctx.clearRect(0, 0, CANVAS_WIDTH, CANVAS_HEIGHT);
+            
+            // Cer
+            const skyGradient = ctx.createLinearGradient(0, 0, 0, GROUND_Y);
+            skyGradient.addColorStop(0, '#0a1929');
+            skyGradient.addColorStop(1, '#1a365d');
+            ctx.fillStyle = skyGradient;
+            ctx.fillRect(0, 0, CANVAS_WIDTH, GROUND_Y);
+            
+            // Soare
+            ctx.beginPath();
+            ctx.arc(CANVAS_WIDTH - 100, 80, 40, 0, Math.PI * 2);
+            const sunGradient = ctx.createRadialGradient(
+                CANVAS_WIDTH - 100, 80, 0,
+                CANVAS_WIDTH - 100, 80, 40
+            );
+            sunGradient.addColorStop(0, '#ffeb3b');
+            sunGradient.addColorStop(1, '#ff9800');
+            ctx.fillStyle = sunGradient;
+            ctx.fill();
+            
+            // Nori
+            drawClouds();
+            
+            // Sol
+            const groundGradient = ctx.createLinearGradient(0, GROUND_Y, 0, CANVAS_HEIGHT);
+            groundGradient.addColorStop(0, '#5d4037');
+            groundGradient.addColorStop(1, '#3e2723');
+            ctx.fillStyle = groundGradient;
+            ctx.fillRect(0, GROUND_Y, CANVAS_WIDTH, CANVAS_HEIGHT - GROUND_Y);
+            
+            // Linie sol
+            ctx.beginPath();
+            ctx.moveTo(0, GROUND_Y);
+            ctx.lineTo(CANVAS_WIDTH, GROUND_Y);
+            ctx.strokeStyle = '#8d6e63';
+            ctx.lineWidth = 3;
+            ctx.stroke();
+            
+            // Grid (dacă e activat)
+            if (showGrid.checked) {
+                drawGrid();
+            }
+            
+            // Platformă lansare
+            drawLaunchPlatform();
+            
+            // Etichete axe
+            drawAxisLabels();
+        }
+        
+        function drawClouds() {
+            const clouds = [
+                {x: 200, y: 100, size: 30},
+                {x: 400, y: 150, size: 40},
+                {x: 600, y: 80, size: 35},
+                {x: 800, y: 120, size: 45}
+            ];
+            
+            clouds.forEach(cloud => {
+                ctx.save();
+                ctx.globalAlpha = 0.7;
+                ctx.fillStyle = 'rgba(255, 255, 255, 0.8)';
+                
+                for (let i = 0; i < 5; i++) {
+                    const offsetX = Math.cos(i) * cloud.size * 0.3;
+                    const offsetY = Math.sin(i) * cloud.size * 0.2;
+                    ctx.beginPath();
+                    ctx.arc(
+                        cloud.x + offsetX,
+                        cloud.y + offsetY,
+                        cloud.size * (0.6 + Math.random() * 0.4),
+                        0,
+                        Math.PI * 2
+                    );
+                    ctx.fill();
+                }
+                ctx.restore();
+            });
+        }
+        
+        function drawGrid() {
+            ctx.strokeStyle = 'rgba(255, 255, 255, 0.1)';
+            ctx.lineWidth = 1;
+            ctx.setLineDash([5, 5]);
+            
+            // Linii verticale
+            for (let x = 100; x < CANVAS_WIDTH; x += 50) {
+                ctx.beginPath();
+                ctx.moveTo(x, 0);
+                ctx.lineTo(x, GROUND_Y);
+                ctx.stroke();
+                
+                // Etichete
+                ctx.fillStyle = 'rgba(255, 255, 255, 0.6)';
+                ctx.font = '12px Arial';
+                ctx.fillText(`${(x-100)/(2*SCALE)}m`, x - 10, GROUND_Y + 20);
+            }
+            
+            // Linii orizontale
+            for (let y = GROUND_Y; y > 50; y -= 50) {
+                ctx.beginPath();
+                ctx.moveTo(0, y);
+                ctx.lineTo(CANVAS_WIDTH, y);
+                ctx.stroke();
+                
+                // Etichete
+                ctx.fillStyle = 'rgba(255, 255, 255, 0.6)';
+                ctx.font = '12px Arial';
+                ctx.fillText(`${(GROUND_Y - y)/(2*SCALE)}m`, 30, y - 5);
+            }
+            
+            ctx.setLineDash([]);
+        }
+        
+        function drawLaunchPlatform() {
+            ctx.fillStyle = '#546e7a';
+            ctx.fillRect(80, GROUND_Y - 40, 40, 40);
+            
+            ctx.fillStyle = '#78909c';
+            ctx.fillRect(85, GROUND_Y - 45, 30, 5);
+            
+            // Indicator unghi
+            const angle = parseFloat(sliders.angle.value);
+            const angleRad = angle * Math.PI / 180;
+            const length = 60;
+            
+            ctx.beginPath();
+            ctx.moveTo(100, GROUND_Y - 20);
+            ctx.lineTo(
+                100 + Math.cos(angleRad) * length,
+                GROUND_Y - 20 - Math.sin(angleRad) * length
+            );
+            ctx.strokeStyle = '#00e676';
+            ctx.lineWidth = 3;
+            ctx.stroke();
+            
+            // Arc unghi
+            ctx.beginPath();
+            ctx.arc(100, GROUND_Y - 20, 30, -Math.PI/2, -Math.PI/2 + angleRad, false);
+            ctx.strokeStyle = 'rgba(0, 230, 118, 0.5)';
+            ctx.lineWidth = 2;
+            ctx.stroke();
+            
+            // Text unghi
+            ctx.fillStyle = '#00e676';
+            ctx.font = 'bold 14px Arial';
+            ctx.fillText(`${angle}°`, 130, GROUND_Y - 45);
+        }
+        
+        function drawAxisLabels() {
+            ctx.fillStyle = 'white';
+            ctx.font = 'bold 16px Arial';
+            ctx.fillText('Distanța (m)', CANVAS_WIDTH/2, CANVAS_HEIGHT - 20);
+            
+            ctx.save();
+            ctx.translate(30, GROUND_Y/2);
+            ctx.rotate(-Math.PI/2);
+            ctx.fillText('Înălțimea (m)', 0, 0);
+            ctx.restore();
+        }
+        
+        function drawTrajectory() {
+            if (simulation.trajectory.length < 2 || !showTrajectory.checked) return;
+            
+            ctx.beginPath();
+            ctx.moveTo(simulation.trajectory[0].x, simulation.trajectory[0].y);
+            
+            // Gradient pentru traiectorie
+            const gradient = ctx.createLinearGradient(
+                simulation.trajectory[0].x, simulation.trajectory[0].y,
+                simulation.trajectory[simulation.trajectory.length-1].x,
+                simulation.trajectory[simulation.trajectory.length-1].y
+            );
+            gradient.addColorStop(0, 'rgba(0, 230, 118, 0.8)');
+            gradient.addColorStop(1, 'rgba(33, 150, 243, 0.8)');
+            
+            for (let i = 1; i < simulation.trajectory.length; i++) {
+                ctx.lineTo(simulation.trajectory[i].x, simulation.trajectory[i].y);
+            }
+            
+            ctx.strokeStyle = gradient;
+            ctx.lineWidth = 2;
+            ctx.stroke();
+            
+            // Puncte date (dacă sunt activate)
+            if (showDataPoints.checked && simulation.dataPoints.length > 0) {
+                simulation.dataPoints.forEach(point => {
+                    ctx.beginPath();
+                    ctx.arc(point.x, point.y, 3, 0, Math.PI * 2);
+                    ctx.fillStyle = point.color || '#ff5722';
+                    ctx.fill();
+                });
+            }
+        }
+        
+        function drawGraph() {
+            if (simulation.graphData.length < 2) return;
+            
+            graphCtx.clearRect(0, 0, graphCanvas.width, graphCanvas.height);
+            
+            // Grid grafic
+            graphCtx.strokeStyle = '#e0e0e0';
+            graphCtx.lineWidth = 1;
+            
+            // Linii verticale
+            for (let x = 0; x <= graphCanvas.width; x += 50) {
+                graphCtx.beginPath();
+                graphCtx.moveTo(x, 0);
+                graphCtx.lineTo(x, graphCanvas.height);
+                graphCtx.stroke();
+            }
+            
+            // Linii orizontale
+            for (let y = 0; y <= graphCanvas.height; y += 40) {
+                graphCtx.beginPath();
+                graphCtx.moveTo(0, y);
+                graphCtx.lineTo(graphCanvas.width, y);
+                graphCtx.stroke();
+            }
+            
+            // Găsim valorile maxime pentru scalare
+            const maxTime = Math.max(...simulation.graphData.map(d => d.time));
+            const maxHeight = Math.max(...simulation.graphData.map(d => d.height));
+            const maxVelocity = Math.max(...simulation.graphData.map(d => Math.abs(d.vy)));
+            
+            // Desenăm înălțimea
+            graphCtx.beginPath();
+            simulation.graphData.forEach((data, i) => {
+                const x = (data.time / maxTime) * graphCanvas.width * 0.9;
+                const y = graphCanvas.height - (data.height / maxHeight) * graphCanvas.height * 0.8;
+                
+                if (i === 0) {
+                    graphCtx.moveTo(x, y);
+                } else {
+                    graphCtx.lineTo(x, y);
+                }
+            });
+            graphCtx.strokeStyle = '#4a148c';
+            graphCtx.lineWidth = 2;
+            graphCtx.stroke();
+            
+            // Desenăm viteza verticală
+            graphCtx.beginPath();
+            simulation.graphData.forEach((data, i) => {
+                const x = (data.time / maxTime) * graphCanvas.width * 0.9;
+                const y = graphCanvas.height - (Math.abs(data.vy) / maxVelocity) * graphCanvas.height * 0.8;
+                
+                if (i === 0) {
+                    graphCtx.moveTo(x, y);
+                } else {
+                    graphCtx.lineTo(x, y);
+                }
+            });
+            graphCtx.strokeStyle = '#00c853';
+            graphCtx.lineWidth = 2;
+            graphCtx.setLineDash([5, 5]);
+            graphCtx.stroke();
+            graphCtx.setLineDash([]);
+            
+            // Etichete axe
+            graphCtx.fillStyle = '#666';
+            graphCtx.font = '10px Arial';
+            graphCtx.fillText('Timp (s)', graphCanvas.width/2, graphCanvas.height - 5);
+            
+            graphCtx.save();
+            graphCtx.translate(5, graphCanvas.height/2);
+            graphCtx.rotate(-Math.PI/2);
+            graphCtx.fillText('Înălțime (m) / Viteză (m/s)', 0, 0);
+            graphCtx.restore();
+        }
+        
+        // =============== ANIMAȚIE ===============
+        function animate() {
+            if (!simulation.running || simulation.paused) return;
+            
+            const dt = 0.016 * parseFloat(sliders.simSpeed.value); // Delta time ajustat
+            
+            // Actualizăm proiectilul
+            const isActive = simulation.projectile.update(dt);
+            
+            // Adăugăm la traiectorie
+            simulation.trajectory.push({
+                x: simulation.projectile.x,
+                y: simulation.projectile.y
+            });
+            
+            // Adăugăm punct de date (la fiecare 0.1 secunde)
+            if (Math.floor(simulation.projectile.flightTime * 10) % 1 === 0) {
+                simulation.dataPoints.push({
+                    x: simulation.projectile.x,
+                    y: simulation.projectile.y,
+                    color: '#ff5722'
+                });
+            }
+            
+            // Adăugăm date pentru grafic (la fiecare 0.05 secunde)
+            if (Math.floor(simulation.projectile.flightTime * 20) % 1 === 0) {
+                simulation.graphData.push({
+                    time: simulation.projectile.flightTime,
+                    height: (GROUND_Y - simulation.projectile.y) / SCALE,
+                    vy: simulation.projectile.vy
+                });
+            }
+            
+            // Desenăm
+            drawBackground();
+            drawTrajectory();
+            simulation.projectile.draw();
+            updateInfo();
+            updateSliderValues();
+            drawGraph();
+            
+            // Continuăm sau oprim animația
+            if (isActive) {
+                animationId = requestAnimationFrame(animate);
+            } else {
+                simulation.running = false;
+                launchBtn.innerHTML = '<i class="fas fa-play"></i> Lansare';
+                launchBtn.style.background = 'linear-gradient(135deg, #00c853, #00e676)';
+            }
+        }
+        
+        // =============== CONTROL SIMULARE ===============
+        function launchSimulation() {
+            if (simulation.running && !simulation.paused) {
+                // Dacă rulează deja, îl oprim
+                simulation.running = false;
+                simulation.paused = false;
+                if (animationId) cancelAnimationFrame(animationId);
+                launchBtn.innerHTML = '<i class="fas fa-play"></i> Lansare';
+                launchBtn.style.background = 'linear-gradient(135deg, #00c853, #00e676)';
+                pauseBtn.innerHTML = '<i class="fas fa-pause"></i> Pauză';
+                return;
+            }
+            
+            if (simulation.paused) {
+                // Dacă era pe pauză, reluăm
+                simulation.paused = false;
+                pauseBtn.innerHTML = '<i class="fas fa-pause"></i> Pauză';
+                animate();
+                return;
+            }
+            
+            // Creăm o nouă simulare
+            simulation = {
+                running: true,
+                paused: false,
+                time: 0,
+                projectile: new Projectile({
+                    angle: parseFloat(sliders.angle.value),
+                    speed: parseFloat(sliders.speed.value),
+                    height: parseFloat(sliders.height.value),
+                    mass: parseFloat(sliders.mass.value),
+                    gravity: parseFloat(sliders.gravity.value),
+                    density: parseFloat(sliders.density.value),
+                    drag: parseFloat(sliders.drag.value),
+                    wind: parseFloat(sliders.wind.value)
+                }),
+                trajectory: [],
+                dataPoints: [],
+                graphData: []
+            };
+            
+            // Actualizăm interfața
+            launchBtn.innerHTML = '<i class="fas fa-stop"></i> Stop';
+            launchBtn.style.background = 'linear-gradient(135deg, #f44336, #d32f2f)';
+            
+            // Pornim animația
+            animate();
+        }
+        
+        function pauseSimulation() {
+            if (!simulation.running) return;
+            
+            simulation.paused = !simulation.paused;
+            
+            if (simulation.paused) {
+                pauseBtn.innerHTML = '<i class="fas fa-play"></i> Continuă';
+                if (animationId) cancelAnimationFrame(animationId);
+            } else {
+                pauseBtn.innerHTML = '<i class="fas fa-pause"></i> Pauză';
+                animate();
+            }
+        }
+        
+        function resetSimulation() {
+            simulation.running = false;
+            simulation.paused = false;
+            
+            if (animationId) {
+                cancelAnimationFrame(animationId);
+                animationId = null;
+            }
+            
+            // Resetare butoane
+            launchBtn.innerHTML = '<i class="fas fa-play"></i> Lansare';
+            launchBtn.style.background = 'linear-gradient(135deg, #00c853, #00e676)';
+            pauseBtn.innerHTML = '<i class="fas fa-pause"></i> Pauză';
+            
+            // Redesenăm fundalul
+            drawBackground();
+            
+            // Resetare valori
+            values.currentTime.textContent = '0.00';
+            infoCards.distance.textContent = '0.00';
+            infoCards.height.textContent = '0.00';
+            infoCards.time.textContent = '0.00';
+            infoCards.impactSpeed.textContent = '0.00';
+            
+            // Resetare grafic
+            graphCtx.clearRect(0, 0, graphCanvas.width, graphCanvas.height);
+        }
+        
+        // =============== PRESET-URI ===============
+        const presets = {
+            cannon: {
+                angle: 30,
+                speed: 80,
+                height: 2,
+                mass: 5.0,
+                gravity: 9.81,
+                density: 1.2,
+                drag: 0.47,
+                wind: 0
+            },
+            basketball: {
+                angle: 60,
+                speed: 12,
+                height: 2,
+                mass: 0.6,
+                gravity: 9.81,
+                density: 1.2,
+                drag: 0.5,
+                wind: 0
+            },
+            moon: {
+                angle: 45,
+                speed: 50,
+                height: 0,
+                mass: 1.0,
+                gravity: 1.62,
+                density: 0,
+                drag: 0,
+                wind: 0
+            },
+            jupiter: {
+                angle: 45,
+                speed: 50,
+                height: 0,
+                mass: 1.0,
+                gravity: 24.79,
+                density: 0.16,
+                drag: 0.47,
+                wind: 0
+            }
+        };
+        
+        function applyPreset(presetName) {
+            const preset = presets[presetName];
+            if (!preset) return;
+            
+            // Opțional: resetăm simularea curentă
+            resetSimulation();
+            
+            // Aplicăm valorile preset
+            sliders.angle.value = preset.angle;
+            sliders.speed.value = preset.speed;
+            sliders.height.value = preset.height;
+            sliders.mass.value = preset.mass;
+            sliders.gravity.value = preset.gravity;
+            sliders.density.value = preset.density;
+            sliders.drag.value = preset.drag;
+            sliders.wind.value = preset.wind;
+            
+            // Dezactivăm/activăm opțiuni în funcție de preset
+            if (presetName === 'moon') {
+                airResistance.checked = false;
+                windEffect.checked = false;
+                document.getElementById('windGroup').style.display = 'none';
+            } else {
+                airResistance.checked = preset.density > 0;
+            }
+            
+            // Actualizăm afișajul
+            updateSliderValues();
+            drawBackground();
+        }
+        
+        // =============== EVENT LISTENERS ===============
+        // Actualizare valori la schimbare slider
+        Object.values(sliders).forEach(slider => {
+            slider.addEventListener('input', () => {
+                updateSliderValues();
+                if (!simulation.running) {
+                    drawBackground();
+                }
+            });
+        });
+        
+        // Control vizibilitate slider vânt
+        windEffect.addEventListener('change', function() {
+            document.getElementById('windGroup').style.display = this.checked ? 'block' : 'none';
+        });
+        
+        // Butoane control
+        launchBtn.addEventListener('click', launchSimulation);
+        pauseBtn.addEventListener('click', pauseSimulation);
+        resetBtn.addEventListener('click', resetSimulation);
+        
+        // Preset-uri
+        presetBtns.forEach(btn => {
+            btn.addEventListener('click', function() {
+                const preset = this.getAttribute('data-preset');
+                applyPreset(preset);
+            });
+        });
+        
+        // Opțiuni de afișare
+        [showTrajectory, showGrid, showVectors, showDataPoints, showShadow].forEach(checkbox => {
+            checkbox.addEventListener('change', function() {
+                if (simulation.running) {
+                    drawBackground();
+                    drawTrajectory();
+                    if (simulation.projectile) {
+                        simulation.projectile.draw();
+                    }
+                } else {
+                    drawBackground();
+                }
+            });
+        });
+        
+        // Tip proiectil
+        document.querySelectorAll('input[name="projectileType"]').forEach(radio => {
+            radio.addEventListener('change', function() {
+                if (simulation.running && simulation.projectile) {
+                    simulation.projectile.draw();
+                }
+            });
+        });
+        
+        // =============== INIȚIALIZARE ===============
+        function init() {
+            updateSliderValues();
+            drawBackground();
+            drawGraph();
+        }
+        
+        // Pornire
+        window.addEventListener('load', init);
+    </script>
+</body>
+</html>
